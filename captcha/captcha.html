@@ -12,13 +12,26 @@
       margin: 0;
       padding: 0;
       font-family: sans-serif;
+      overflow: hidden;
     }
 
     #captcha-container {
       background: white;
       width: 390px;
       height: 300px;
-      overflow: hidden;;
+      overflow: hidden;
+    }
+
+    #button-container {
+      position:absolute;
+      top: 0px;
+      right: 0px;
+    }
+
+    button {
+      opacity: 0.5;
+      font-size: 24px;
+      padding: 6px;
     }
 
   </style>
@@ -27,6 +40,29 @@
 <body>
   <div id="captcha-container">
     <canvas id="canvas"  width="390" height="300"></canvas>
+    <div id="button-container">
+      <table>
+        <tr>
+          <td></td>
+          <td><button id="btn1"></button></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><button id="btn2"></button></td>
+          <td></td>
+          <td><button id="btn3"></button></td>
+        </tr>
+        <tr>
+          <td></td>
+          <td><button id="btn4"></button></td>
+          <td></td>
+        </tr>
+      </table>
+      
+      
+      
+      
+    </div>
   </div>
 
   <script type="text/javascript">
@@ -35,6 +71,50 @@
       function captchaSuccess() {
         window.top.postMessage("success", '*');
       }
+
+      function assignButtons() {
+        const btn1 = document.getElementById("btn1");
+        const btn2 = document.getElementById("btn2");
+        const btn3 = document.getElementById("btn3");
+        const btn4 = document.getElementById("btn4");
+
+        const buttons = [btn1, btn2, btn3, btn4];
+        const dir = [Directions.UP, Directions.DOWN, Directions.LEFT, Directions.RIGHT];
+
+        console.log(dir);
+
+        //shuffle directions
+        for(let i = dir.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [dir[i], dir[j]] = [dir[j], dir[i]];
+        }
+
+        console.log(dir);
+        
+        //set buttons to directions
+        buttons.forEach((btn, i) => {
+          switch(dir[i]) {
+            case Directions.DOWN:
+              btn.textContent = "⬇️";
+              break;
+            case Directions.LEFT:
+              btn.textContent = "⬅️";
+              break;
+            case Directions.RIGHT:
+              btn.textContent = "➡️";
+              break;
+            case Directions.UP:
+              btn.textContent = "⬆️";
+              break;
+          }
+          
+          btn.addEventListener("click", () => {
+            movePlayer(dir[i]);
+          });
+          console.log(`assigned btn${i} to ${dir[i]}`);
+        });
+
+      }
       
       const tilesSquare = 17;
       const tileSize = 300 / tilesSquare;
@@ -42,6 +122,7 @@
       var player;
       var start = null;
       var finish = null;
+      allowMove = false;
 
       const Directions = {
         UP : 0,
@@ -81,6 +162,7 @@
       }
 
       function startGame() {
+        assignButtons();
         maze = generateMaze(tilesSquare, tilesSquare);
         player = new createPlayer(tileSize, tileSize, start[0] * tileSize, start[1] * tileSize);
         console.log(maze.map(row => row.join(' ')).join('\n'));
@@ -98,6 +180,7 @@
         });
         
         gameCanvas.start();
+        allowMove = true;
       }
 
       /*DRAW MAZE*/
@@ -224,7 +307,8 @@
       }
       
       function movePlayer(direction) {
-        console.log(`Move player ${direction}`)
+        if(!allowMove) return;
+
         switch (direction) {
           case Directions.UP:
             if (!isCollision(player.x, player.y - 1)) {
@@ -249,8 +333,9 @@
         }
 
         if(isWin(player.x, player.y)) {
+          allowMove = false;
           console.log("You win!");
-          captchaSuccess();
+          setInterval(captchaSuccess, 3000);
       }
     }
 
