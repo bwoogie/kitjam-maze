@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>Joel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
+  <link rel="text/javascript" src="maze.js">
   <style type="text/css">
     html,
     body {
@@ -18,21 +18,15 @@
       background: white;
       width: 390px;
       height: 300px;
+      overflow: hidden;;
     }
 
-    /* Your style here... */
   </style>
 </head>
 
 <body>
   <div id="captcha-container">
-    <!-- Add your CAPTCHA here: -->
-    Hello world!
-
-    <!-- We've added a sample button. Feel free to remove it: -->
-    <button id="solve">
-      Solve!
-    </button>
+    <canvas id="canvas"  width="390" height="300"></canvas>
   </div>
 
   <script type="text/javascript">
@@ -41,11 +35,226 @@
       function captchaSuccess() {
         window.top.postMessage("success", '*');
       }
+      
+      const tilesSquare = 17;
+      const tileSize = 300 / tilesSquare;
+      var maze = null;
+      var player;
+      var start = null;
+      var finish = null;
 
-      // Your CAPTCHA code goes here, we've added a simple example below:
-      document.getElementById('solve')
-           .addEventListener('click', () => captchaSuccess());
+      const Directions = {
+        UP : 0,
+        DOWN : 1,
+        LEFT : 2,
+        RIGHT : 3
+      }
 
+      var gameCanvas = {
+        canvas : document.getElementById("canvas"),
+        start : function() {
+          this.context = this.canvas.getContext("2d");
+          this.interval = setInterval(updateGameCanvas, 20);
+        },
+        clear : function() {
+          this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+      }
+
+      function updateGameCanvas() {
+        var ctx = gameCanvas.context;
+        ctx.restore();
+        gameCanvas.clear();
+        ctx.save();
+
+        //hide the maze
+        ctx.fillStyle = "black";
+        ctx.fillRect(0,0,390,300);
+        ctx.beginPath();
+        ctx.arc(player.x + tileSize, player.y + tileSize, 60, 0, 2 * Math.PI);
+        ctx.clip();
+        
+        drawMaze();
+
+        drawPlayer();
+
+      }
+
+      function startGame() {
+        maze = generateMaze(tilesSquare, tilesSquare);
+        player = new createPlayer(tileSize, tileSize, start[0] * tileSize, start[1] * tileSize);
+        console.log(maze.map(row => row.join(' ')).join('\n'));
+        document.addEventListener('keydown', (event)=>{
+          if(event.key === 'ArrowUp') {
+            movePlayer(Directions.UP);
+          } else if(event.key === 'ArrowDown') {
+            movePlayer(Directions.DOWN);
+          } else if(event.key === 'ArrowLeft') {
+            movePlayer(Directions.LEFT);
+          } else if(event.key === 'ArrowRight') {
+            movePlayer(Directions.RIGHT);
+          }
+
+        });
+        
+        gameCanvas.start();
+      }
+
+      /*DRAW MAZE*/
+      function drawMaze() {
+        ctx = gameCanvas.context;
+        tSize = Math.ceil(tileSize);
+        
+        for (let i = 0; i < maze.length; i++) {
+          for (let j = 0; j < maze[i].length; j++) {
+            if (maze[i][j] === 0) {
+              ctx.fillStyle = "black";
+              ctx.fillRect(Math.floor(j * tileSize), Math.floor( i * tileSize), tSize, tSize);
+            } else if (maze[i][j] === 1) {
+              ctx.fillStyle = "white";
+              ctx.fillRect(Math.floor(j * tileSize), Math.floor(i * tileSize), tSize, tSize);
+            } else if (maze[i][j] === 2) {
+              ctx.fillStyle = "white";
+              ctx.fillRect(j * tileSize, i * tileSize, tSize, tSize);
+            } else if (maze[i][j] === 3) {
+              ctx.fillStyle = "green";
+              ctx.fillRect(j * tileSize, i * tileSize, tSize, tSize);
+            }
+          }
+        }
+      }
+
+      /*MAZE GENERATION*/
+      function generateMaze(width, height) {
+        // Make sure width/height are odd to allow proper maze structure
+        if (width % 2 === 0) width += 1;
+        if (height % 2 === 0) height += 1;
+
+        // Initialize full maze as walls
+        const maze = Array.from({ length: height }, () =>
+          Array(width).fill(0)
+        );
+
+        // Directions (up, right, down, left)
+        const dirs = [
+          [0, -2], [2, 0], [0, 2], [-2, 0]
+        ];
+
+        function isInBounds(x, y) {
+          return x > 0 && x < width - 1 && y > 0 && y < height - 1;
+        }
+
+        function shuffle(array) {
+          for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+          }
+        }
+
+        function carve(x, y) {
+          maze[y][x] = 1;
+
+          shuffle(dirs);
+          for (const [dx, dy] of dirs) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (isInBounds(nx, ny) && maze[ny][nx] === 0) {
+              // Carve wall between
+              maze[y + dy / 2][x + dx / 2] = 1;
+              carve(nx, ny);
+            }
+          }
+        }
+
+        // Choose a random odd start point
+        const startX = 1;
+        const startY = 1;
+        carve(startX, startY);
+
+        // Place start and finish
+        maze[startY][startX] = 2; // Start
+
+        let endX = width - 2;
+        let endY = height - 2;
+
+        // Find farthest valid point from start (bottom-right corner preferred)
+        for (let y = height - 2; y > 0; y--) {
+          for (let x = width - 2; x > 0; x--) {
+            if (maze[y][x] === 1) {
+              endX = x;
+              endY = y;
+              break;
+            }
+          }
+          if (endX !== width - 2 || endY !== height - 2) break;
+        }
+
+        maze[endY][endX] = 3; // Finish
+
+        start = [startX, startY];
+        finish = [endX, endY];
+
+        return maze;
+      }
+
+      /*PLAYER FUNCTIONS*/
+      function createPlayer(width, height, x, y) {
+        this.width = width;
+        this.height = height;
+        this.x = x;
+        this.y = y;
+      }
+
+      function drawPlayer() {
+        ctx = gameCanvas.context;
+        ctx.fillStyle = "red";
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+      }
+
+      function isCollision(x, y) {
+        x = Math.floor(x / tileSize);
+        y = Math.floor(y / tileSize);
+        return maze[y][x] === 0;
+      }
+
+      function isWin(x, y) {
+        x = Math.floor(x / tileSize);
+        y = Math.floor(y / tileSize);
+        return maze[y][x] === 3;
+      }
+      
+      function movePlayer(direction) {
+        console.log(`Move player ${direction}`)
+        switch (direction) {
+          case Directions.UP:
+            if (!isCollision(player.x, player.y - 1)) {
+              player.y -= tileSize;
+            }
+            break;
+          case Directions.DOWN:
+            if (!isCollision(player.x, player.y + tileSize + 1)) {
+              player.y += tileSize;
+            }
+            break;
+          case Directions.LEFT:
+            if (!isCollision(player.x - 1, player.y)) {
+              player.x -= tileSize;
+            }
+            break;
+          case Directions.RIGHT:
+            if (!isCollision(player.x + tileSize + 1, player.y)) {
+              player.x += tileSize;
+            }
+            break;
+        }
+
+        if(isWin(player.x, player.y)) {
+          console.log("You win!");
+          captchaSuccess();
+      }
+    }
+
+      startGame();
     })(window, document);
   </script>
 </body>
