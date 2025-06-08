@@ -31,7 +31,7 @@
     button {
       opacity: 0.5;
       font-size: 24px;
-      padding: 6px;
+      padding: 3px;
     }
 
   </style>
@@ -58,10 +58,7 @@
           <td></td>
         </tr>
       </table>
-      
-      
-      
-      
+
     </div>
   </div>
 
@@ -71,17 +68,19 @@
       function captchaSuccess() {
         window.top.postMessage("success", '*');
       }
+      
+      let btnHandlers = {};
 
       function assignButtons() {
         const btn1 = document.getElementById("btn1");
         const btn2 = document.getElementById("btn2");
         const btn3 = document.getElementById("btn3");
         const btn4 = document.getElementById("btn4");
-
+        
         const buttons = [btn1, btn2, btn3, btn4];
-        const dir = [Directions.UP, Directions.DOWN, Directions.LEFT, Directions.RIGHT];
+        const dir = ['up', 'down', 'left', 'right'];
 
-        console.log(dir);
+        
 
         //shuffle directions
         for(let i = dir.length - 1; i > 0; i--) {
@@ -89,37 +88,40 @@
           [dir[i], dir[j]] = [dir[j], dir[i]];
         }
 
-        console.log(dir);
         
         //set buttons to directions
         buttons.forEach((btn, i) => {
           switch(dir[i]) {
-            case Directions.DOWN:
+            case 'down':
               btn.textContent = "⬇️";
               break;
-            case Directions.LEFT:
+            case 'left':
               btn.textContent = "⬅️";
               break;
-            case Directions.RIGHT:
+            case 'right':
               btn.textContent = "➡️";
               break;
-            case Directions.UP:
+            case 'up':
               btn.textContent = "⬆️";
               break;
           }
           
-          btn.addEventListener("click", () => {
-            movePlayer(dir[i]);
-          });
-          console.log(`assigned btn${i} to ${dir[i]}`);
+          if(btnHandlers[i]) {
+              btn.removeEventListener("click", btnHandlers[i]);
+          }
+
+          const btnClickHandler = () => movePlayer(dir[i]);
+          btnHandlers[i] = btnClickHandler;
+          btn.addEventListener("click", btnHandlers[i]);
         });
 
       }
+
       
       const tilesSquare = 17;
       const tileSize = 300 / tilesSquare;
       var maze = null;
-      var player;
+      
       var start = null;
       var finish = null;
       allowMove = false;
@@ -152,7 +154,7 @@
         ctx.fillStyle = "black";
         ctx.fillRect(0,0,390,300);
         ctx.beginPath();
-        ctx.arc(player.x + tileSize, player.y + tileSize, 60, 0, 2 * Math.PI);
+        ctx.arc(player.pixelX, player.pixelY, 60, 0, 2 * Math.PI);
         ctx.clip();
         
         drawMaze();
@@ -164,17 +166,22 @@
       function startGame() {
         assignButtons();
         maze = generateMaze(tilesSquare, tilesSquare);
-        player = new createPlayer(tileSize, tileSize, start[0] * tileSize, start[1] * tileSize);
+        maze = addObstacles(maze);
+
+        //player = new createPlayer(tileSize, tileSize, start[0] * tileSize, start[1] * tileSize);
+        player.gridX = start[0];
+        player.gridY = start[1];
+
         console.log(maze.map(row => row.join(' ')).join('\n'));
         document.addEventListener('keydown', (event)=>{
           if(event.key === 'ArrowUp') {
-            movePlayer(Directions.UP);
+            movePlayer('up');
           } else if(event.key === 'ArrowDown') {
-            movePlayer(Directions.DOWN);
+            movePlayer('down');
           } else if(event.key === 'ArrowLeft') {
-            movePlayer(Directions.LEFT);
+            movePlayer('left');
           } else if(event.key === 'ArrowRight') {
-            movePlayer(Directions.RIGHT);
+            movePlayer('right');
           }
 
         });
@@ -201,6 +208,9 @@
               ctx.fillRect(j * tileSize, i * tileSize, tSize, tSize);
             } else if (maze[i][j] === 3) {
               ctx.fillStyle = "green";
+              ctx.fillRect(j * tileSize, i * tileSize, tSize, tSize);
+            }else if (maze[i][j] === 4) {
+              ctx.fillStyle = "orange";
               ctx.fillRect(j * tileSize, i * tileSize, tSize, tSize);
             }
           }
@@ -276,22 +286,61 @@
 
         start = [startX, startY];
         finish = [endX, endY];
+        return maze;
+      }
+
+      function addObstacles(maze) {
+        //add some button randomizers
+        const paths = getAllPathTiles(maze);
+
+        var numOfRandomizers = 10;
+        if(numOfRandomizers > paths.length) numOfRandomizers = paths.length;
+        
+        for (let i = 0; i < numOfRandomizers; i++) {
+          const randomizer = paths[Math.floor(Math.random() * paths.length)];
+          maze[randomizer['y']][randomizer['x']] = 4;
+        }
 
         return maze;
       }
 
+      function getAllPathTiles(maze) {
+        const paths = [];
+
+        for (let y = 0; y < maze.length; y++) {
+          for (let x = 0; x < maze[y].length; x++) {
+            if (maze[y][x] === 1) {
+              paths.push({ x, y });
+            }
+          }
+        }
+
+        return paths;
+      }
+
       /*PLAYER FUNCTIONS*/
-      function createPlayer(width, height, x, y) {
+      /*function createPlayer(width, height, x, y) {
         this.width = width;
         this.height = height;
         this.x = x;
         this.y = y;
+        
+      }*/
+
+      const player = {
+        gridX: 1,
+        gridY: 1,
+        pixelX: 1 * tileSize,
+        pixelY: 1 * tileSize,
+        moving: false
       }
 
       function drawPlayer() {
+        
+
         ctx = gameCanvas.context;
         ctx.fillStyle = "red";
-        ctx.fillRect(player.x, player.y, player.width, player.height);
+        ctx.fillRect(player.pixelX, player.pixelY, tileSize, tileSize);
       }
 
       function isCollision(x, y) {
@@ -300,16 +349,78 @@
         return maze[y][x] === 0;
       }
 
-      function isWin(x, y) {
-        x = Math.floor(x / tileSize);
-        y = Math.floor(y / tileSize);
-        return maze[y][x] === 3;
+      function handleObstacle(x, y) {
+        //x = Math.floor(x / tileSize);
+        //y = Math.floor(y / tileSize);
+        
+        if(maze[y][x] === 3) {
+          allowMove = false;
+          console.log("Solved");
+          setInterval(captchaSuccess, 3000);
+        } else if(maze[y][x] === 4) {
+          maze[y][x] = 1;
+          assignButtons();
+        } 
       }
+
       
       function movePlayer(direction) {
-        if(!allowMove) return;
+        if(player.moving) return;
 
-        switch (direction) {
+        const dirMap = {
+          up: [0, -1],
+          down: [0, 1],
+          left: [-1, 0],
+          right: [1, 0]
+        };
+
+
+
+        const [dx, dy] = dirMap[direction];
+        const newX = player.gridX + dx;
+        const newY = player.gridY + dy;
+
+        // Check bounds & wall
+        if (
+          newY < 0 || newY >= maze.length ||
+          newX < 0 || newX >= maze[0].length ||
+          maze[newY][newX] === 0
+        ) return;
+
+        // Begin movement
+        const startX = player.pixelX;
+        const startY = player.pixelY;
+        const endX = newX * tileSize;
+        const endY = newY * tileSize;
+
+        const duration = 200; // in ms
+        const startTime = performance.now();
+        player.moving = true;
+
+        function animate(now) {
+          const elapsed = now - startTime;
+          const t = Math.min(elapsed / duration, 1); // clamp 0..1
+
+          // Linear interpolation
+          player.pixelX = startX + (endX - startX) * t;
+          player.pixelY = startY + (endY - startY) * t;
+
+          if (t < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            // Finish movement
+            player.gridX = newX;
+            player.gridY = newY;
+            player.pixelX = endX;
+            player.pixelY = endY;
+            player.moving = false;
+          }
+
+        }
+
+        requestAnimationFrame(animate);
+
+        /*switch (direction) {
           case Directions.UP:
             if (!isCollision(player.x, player.y - 1)) {
               player.y -= tileSize;
@@ -330,13 +441,9 @@
               player.x += tileSize;
             }
             break;
-        }
+        }*/
 
-        if(isWin(player.x, player.y)) {
-          allowMove = false;
-          console.log("You win!");
-          setInterval(captchaSuccess, 3000);
-      }
+        handleObstacle(player.gridX, player.gridY);
     }
 
       startGame();
