@@ -30,7 +30,7 @@
 
     button {
       opacity: 0.5;
-      font-size: 24px;
+      font-size: 16px;
       padding: 3px;
     }
 
@@ -118,10 +118,11 @@
       }
 
       
-      const tilesSquare = 17;
+      const tilesSquare = 37;
       const tileSize = 300 / tilesSquare;
       var maze = null;
-      
+      var circleSize = 100;
+      var circleTimer;
       var start = null;
       var finish = null;
       allowMove = false;
@@ -154,7 +155,7 @@
         ctx.fillStyle = "black";
         ctx.fillRect(0,0,390,300);
         ctx.beginPath();
-        ctx.arc(player.pixelX, player.pixelY, 60, 0, 2 * Math.PI);
+        ctx.arc(player.pixelX, player.pixelY, circleSize, 0, 2 * Math.PI);
         ctx.clip();
         
         drawMaze();
@@ -185,6 +186,12 @@
           }
 
         });
+
+        circleSize = gameCanvas.canvas.width;
+        circleTimer = setInterval(()=>{
+          if(circleSize <= tileSize * 2) { circleSize = tileSize * 2; return; }
+          circleSize--;
+        }, 80);
         
         gameCanvas.start();
         allowMove = true;
@@ -414,6 +421,7 @@
             player.pixelX = endX;
             player.pixelY = endY;
             player.moving = false;
+            handleObstacle(player.gridX, player.gridY);
           }
 
         }
@@ -443,7 +451,7 @@
             break;
         }*/
 
-        handleObstacle(player.gridX, player.gridY);
+        
     }
 
       startGame();
