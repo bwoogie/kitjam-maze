@@ -167,10 +167,10 @@
         ctx.save();
 
         //draw the battle royale circle
-        ctx.fillStyle = "black";
+        ctx.fillStyle = "#12626b";
         ctx.fillRect(0,0,390,300);
         ctx.beginPath();
-        ctx.arc(finish[0] * tileSize, finish[1] * tileSize, circleSize, 0, 2 * Math.PI);
+        ctx.arc((finish[0] * tileSize) + (tileSize / 2), (finish[1] * tileSize) + (tileSize / 2), circleSize, 0, 2 * Math.PI);
         ctx.clip();
         
         //draw maze and player
@@ -181,7 +181,8 @@
       function startGame() {
 
         //randomize the size of the maze
-        var r = Math.floor(Math.random(17) * 10) + 11;
+        var r = Math.floor(Math.random(7) * 10) + 7;
+        console.log(r);
         if(r % 2 === 1) r++;
         tilesSquare = r;
         tileSize = mazeWidth / tilesSquare; //determine how big each tile should be
@@ -202,23 +203,28 @@
         assignButtons();
         document.addEventListener('keydown', (event)=>{
           if(event.key === 'ArrowUp') {
-            movePlayer('up');
+            //movePlayer('up');
+            btnHandlers[0]();
           } else if(event.key === 'ArrowDown') {
-            movePlayer('down');
+            //movePlayer('down');
+            btnHandlers[3]();
           } else if(event.key === 'ArrowLeft') {
-            movePlayer('left');
+            //movePlayer('left');
+            btnHandlers[1]();
           } else if(event.key === 'ArrowRight') {
-            movePlayer('right');
+            //movePlayer('right');
+            btnHandlers[2]();
           }
 
         });
 
         //battle royale circle
+        if(circleTimer !== undefined) clearInterval(circleTimer);
         circleSize = gameCanvas.canvas.width;
         circleTimer = setInterval(()=>{
-          if(circleSize <= tileSize * 4) { circleSize = tileSize * 4; return; }
+          if(circleSize <= 0) { startGame(); }
           circleSize--;
-        }, 120);
+        }, 50);
         
         gameCanvas.start();
         allowMove = true;
