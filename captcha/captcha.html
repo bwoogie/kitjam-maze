@@ -31,7 +31,7 @@
     button {
       opacity: 0.5;
       font-size: 16px;
-      padding: 3px;
+      padding: 2px;
     }
 
   </style>
@@ -117,9 +117,9 @@
 
       }
 
-      
-      const tilesSquare = 37;
-      const tileSize = 300 / tilesSquare;
+      const mazeWidth = 280;
+      var tilesSquare = 37;
+      var tileSize = mazeWidth / tilesSquare;
       var maze = null;
       var circleSize = 100;
       var circleTimer;
@@ -165,15 +165,27 @@
       }
 
       function startGame() {
-        assignButtons();
+
+        //randomize the size of the maze
+        var r = Math.floor(Math.random(37) * 10) + 11;
+        if(r % 2 === 1) r++;
+        tilesSquare = r;
+        tileSize = mazeWidth / tilesSquare; //determine how big each tile should be
+
+        //generate the maze
         maze = generateMaze(tilesSquare, tilesSquare);
         maze = addObstacles(maze);
+        console.log(maze.map(row => row.join(' ')).join('\n'));
 
-        //player = new createPlayer(tileSize, tileSize, start[0] * tileSize, start[1] * tileSize);
+        //place player at the start
         player.gridX = start[0];
         player.gridY = start[1];
+        player.pixelX = player.gridX * tileSize;
+        player.pixelY = player.gridY * tileSize;
 
-        console.log(maze.map(row => row.join(' ')).join('\n'));
+
+        //randomize buttons and setup key listener
+        assignButtons();
         document.addEventListener('keydown', (event)=>{
           if(event.key === 'ArrowUp') {
             movePlayer('up');
@@ -187,9 +199,10 @@
 
         });
 
+        //battle royale circle
         circleSize = gameCanvas.canvas.width;
         circleTimer = setInterval(()=>{
-          if(circleSize <= tileSize * 2) { circleSize = tileSize * 2; return; }
+          if(circleSize <= tileSize * 4) { circleSize = tileSize * 4; return; }
           circleSize--;
         }, 80);
         
@@ -325,15 +338,7 @@
         return paths;
       }
 
-      /*PLAYER FUNCTIONS*/
-      /*function createPlayer(width, height, x, y) {
-        this.width = width;
-        this.height = height;
-        this.x = x;
-        this.y = y;
-        
-      }*/
-
+      /*PLAYER*/
       const player = {
         gridX: 1,
         gridY: 1,
@@ -427,29 +432,6 @@
         }
 
         requestAnimationFrame(animate);
-
-        /*switch (direction) {
-          case Directions.UP:
-            if (!isCollision(player.x, player.y - 1)) {
-              player.y -= tileSize;
-            }
-            break;
-          case Directions.DOWN:
-            if (!isCollision(player.x, player.y + tileSize + 1)) {
-              player.y += tileSize;
-            }
-            break;
-          case Directions.LEFT:
-            if (!isCollision(player.x - 1, player.y)) {
-              player.x -= tileSize;
-            }
-            break;
-          case Directions.RIGHT:
-            if (!isCollision(player.x + tileSize + 1, player.y)) {
-              player.x += tileSize;
-            }
-            break;
-        }*/
 
         
     }
