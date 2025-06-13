@@ -220,13 +220,14 @@
         });
 
         //battle royale circle
+        var circSpeed = 10 * r; // adjust the speed of the circle for the map size
         if(circleTimer !== undefined) clearInterval(circleTimer);
         circleSize = gameCanvas.canvas.width;
         circleTimer = setInterval(()=>{
           if(circleSize <= 0) { startGame(); }
           
           if(!gameOver) circleSize--;
-        }, 50);
+        }, circSpeed);
         
         gameCanvas.start();
         gameOver = false;
