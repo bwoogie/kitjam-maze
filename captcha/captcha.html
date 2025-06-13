@@ -22,6 +22,11 @@
       overflow: hidden;
     }
 
+    .collapsed {
+      visibility: collapse;
+      display: none;
+    }
+
     #button-container {
       position:absolute;
       top: 0px;
@@ -39,6 +44,11 @@
 
 <body>
   <div id="captcha-container">
+    <img src="player.png" id="img-player" class="collapsed"/>
+    <img src="block.png" id="img-block" class="collapsed"/>
+    <img src="path.png" id="img-path" class="collapsed"/>
+    <img src="goal.png" id="img-goal" class="collapsed"/>
+    <img src="scrambler.png" id="img-scrambler" class="collapsed"/>
     <canvas id="canvas"  width="390" height="300"></canvas>
     <div id="button-container">
       <table>
@@ -71,16 +81,21 @@
       
       let btnHandlers = {};
 
+    
+      const imgPlayer = document.getElementById("img-player");
+      const imgBlock = document.getElementById("img-block");
+      const imgPath = document.getElementById("img-path");
+      const imgGoal = document.getElementById("img-goal");
+      const imgScrambler = document.getElementById("img-scrambler");
+      
       function assignButtons() {
         const btn1 = document.getElementById("btn1");
         const btn2 = document.getElementById("btn2");
         const btn3 = document.getElementById("btn3");
         const btn4 = document.getElementById("btn4");
-        
+  
         const buttons = [btn1, btn2, btn3, btn4];
         const dir = ['up', 'down', 'left', 'right'];
-
-        
 
         //shuffle directions
         for(let i = dir.length - 1; i > 0; i--) {
@@ -151,23 +166,22 @@
         gameCanvas.clear();
         ctx.save();
 
-        //hide the maze
+        //draw the battle royale circle
         ctx.fillStyle = "black";
         ctx.fillRect(0,0,390,300);
         ctx.beginPath();
-        ctx.arc(player.pixelX, player.pixelY, circleSize, 0, 2 * Math.PI);
+        ctx.arc(finish[0] * tileSize, finish[1] * tileSize, circleSize, 0, 2 * Math.PI);
         ctx.clip();
         
+        //draw maze and player
         drawMaze();
-
         drawPlayer();
-
       }
 
       function startGame() {
 
         //randomize the size of the maze
-        var r = Math.floor(Math.random(37) * 10) + 11;
+        var r = Math.floor(Math.random(17) * 10) + 11;
         if(r % 2 === 1) r++;
         tilesSquare = r;
         tileSize = mazeWidth / tilesSquare; //determine how big each tile should be
@@ -204,7 +218,7 @@
         circleTimer = setInterval(()=>{
           if(circleSize <= tileSize * 4) { circleSize = tileSize * 4; return; }
           circleSize--;
-        }, 80);
+        }, 120);
         
         gameCanvas.start();
         allowMove = true;
@@ -217,21 +231,16 @@
         
         for (let i = 0; i < maze.length; i++) {
           for (let j = 0; j < maze[i].length; j++) {
-            if (maze[i][j] === 0) {
-              ctx.fillStyle = "black";
-              ctx.fillRect(Math.floor(j * tileSize), Math.floor( i * tileSize), tSize, tSize);
-            } else if (maze[i][j] === 1) {
-              ctx.fillStyle = "white";
-              ctx.fillRect(Math.floor(j * tileSize), Math.floor(i * tileSize), tSize, tSize);
-            } else if (maze[i][j] === 2) {
-              ctx.fillStyle = "white";
-              ctx.fillRect(j * tileSize, i * tileSize, tSize, tSize);
-            } else if (maze[i][j] === 3) {
-              ctx.fillStyle = "green";
-              ctx.fillRect(j * tileSize, i * tileSize, tSize, tSize);
-            }else if (maze[i][j] === 4) {
-              ctx.fillStyle = "orange";
-              ctx.fillRect(j * tileSize, i * tileSize, tSize, tSize);
+            if (maze[i][j] === 0) { //walls
+              ctx.drawImage(imgBlock, 0, 0, 64, 64, Math.floor(j * tileSize), Math.floor( i * tileSize), tSize, tSize);
+            } else if (maze[i][j] === 1 || maze[i][j] === 2) { //path
+              ctx.drawImage(imgPath, 0, 0, 64, 64, Math.floor(j * tileSize), Math.floor( i * tileSize), tSize, tSize);
+            } else if (maze[i][j] === 3) { //goal
+              ctx.drawImage(imgPath, 0, 0, 64, 64, Math.floor(j * tileSize), Math.floor( i * tileSize), tSize, tSize); //draw path underneath
+              ctx.drawImage(imgGoal, 0, 0, 64, 64, Math.floor(j * tileSize), Math.floor( i * tileSize), tSize, tSize);
+            }else if (maze[i][j] === 4) { //scrambler
+              ctx.drawImage(imgPath, 0, 0, 64, 64, Math.floor(j * tileSize), Math.floor( i * tileSize), tSize, tSize); //draw path underneath
+              ctx.drawImage(imgScrambler, 0, 0, 64, 64, Math.floor(j * tileSize), Math.floor( i * tileSize), tSize, tSize);
             }
           }
         }
@@ -351,8 +360,9 @@
         
 
         ctx = gameCanvas.context;
-        ctx.fillStyle = "red";
-        ctx.fillRect(player.pixelX, player.pixelY, tileSize, tileSize);
+        //ctx.fillStyle = "red";
+        //ctx.fillRect(player.pixelX, player.pixelY, tileSize, tileSize);
+        ctx.drawImage(imgPlayer, 0, 0, 64, 64, player.pixelX, player.pixelY, tSize, tSize);
       }
 
       function isCollision(x, y) {
