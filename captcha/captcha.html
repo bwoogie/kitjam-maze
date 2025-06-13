@@ -87,6 +87,34 @@
       const imgPath = document.getElementById("img-path");
       const imgGoal = document.getElementById("img-goal");
       const imgScrambler = document.getElementById("img-scrambler");
+
+      const mazeWidth = 280;
+      var tilesSquare = 37;
+      var tileSize = mazeWidth / tilesSquare;
+      var maze = null;
+      var circleSize = 100;
+      var circleTimer;
+      var start = null;
+      var finish = null;
+      var gameOver = false;
+
+      const Directions = {
+        UP : 0,
+        DOWN : 1,
+        LEFT : 2,
+        RIGHT : 3
+      }
+
+      var gameCanvas = {
+        canvas : document.getElementById("canvas"),
+        start : function() {
+          this.context = this.canvas.getContext("2d");
+          this.interval = setInterval(updateGameCanvas, 20);
+        },
+        clear : function() {
+          this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+      }
       
       function assignButtons() {
         const btn1 = document.getElementById("btn1");
@@ -132,33 +160,7 @@
 
       }
 
-      const mazeWidth = 280;
-      var tilesSquare = 37;
-      var tileSize = mazeWidth / tilesSquare;
-      var maze = null;
-      var circleSize = 100;
-      var circleTimer;
-      var start = null;
-      var finish = null;
-      allowMove = false;
-
-      const Directions = {
-        UP : 0,
-        DOWN : 1,
-        LEFT : 2,
-        RIGHT : 3
-      }
-
-      var gameCanvas = {
-        canvas : document.getElementById("canvas"),
-        start : function() {
-          this.context = this.canvas.getContext("2d");
-          this.interval = setInterval(updateGameCanvas, 20);
-        },
-        clear : function() {
-          this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        }
-      }
+     
 
       function updateGameCanvas() {
         var ctx = gameCanvas.context;
@@ -179,7 +181,6 @@
       }
 
       function startGame() {
-
         //randomize the size of the maze
         var r = Math.floor(Math.random(7) * 10) + 7;
         console.log(r);
@@ -223,11 +224,12 @@
         circleSize = gameCanvas.canvas.width;
         circleTimer = setInterval(()=>{
           if(circleSize <= 0) { startGame(); }
-          circleSize--;
+          
+          if(!gameOver) circleSize--;
         }, 50);
         
         gameCanvas.start();
-        allowMove = true;
+        gameOver = false;
       }
 
       /*DRAW MAZE*/
@@ -363,11 +365,7 @@
       }
 
       function drawPlayer() {
-        
-
         ctx = gameCanvas.context;
-        //ctx.fillStyle = "red";
-        //ctx.fillRect(player.pixelX, player.pixelY, tileSize, tileSize);
         ctx.drawImage(imgPlayer, 0, 0, 64, 64, player.pixelX, player.pixelY, tSize, tSize);
       }
 
@@ -377,12 +375,9 @@
         return maze[y][x] === 0;
       }
 
-      function handleObstacle(x, y) {
-        //x = Math.floor(x / tileSize);
-        //y = Math.floor(y / tileSize);
-        
+      function handleObstacle(x, y) {        
         if(maze[y][x] === 3) {
-          allowMove = false;
+          gameOver = true;
           console.log("Solved");
           setInterval(captchaSuccess, 3000);
         } else if(maze[y][x] === 4) {
@@ -394,6 +389,7 @@
       
       function movePlayer(direction) {
         if(player.moving) return;
+        if(gameOver) return;
 
         const dirMap = {
           up: [0, -1],
@@ -401,8 +397,6 @@
           left: [-1, 0],
           right: [1, 0]
         };
-
-
 
         const [dx, dy] = dirMap[direction];
         const newX = player.gridX + dx;
