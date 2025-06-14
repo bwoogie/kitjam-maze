@@ -28,15 +28,18 @@
     }
 
     #button-container {
+      background-color: rgba(0,0,0,0.6);
       position:absolute;
-      top: 0px;
-      right: 0px;
+      top: 32px;
+      left: 270px;
+      border-radius: 64px;
+      cursor: move;
     }
 
     button {
-      opacity: 0.5;
       font-size: 16px;
       padding: 2px;
+      border-radius: 16px;
     }
 
   </style>
@@ -105,6 +108,29 @@
         RIGHT : 3
       }
 
+      //allow the button 'window' to be dragged around the screen
+      const draggableDiv = document.getElementById('button-container');
+      let offsetX, offsetY, isDragging = false;
+
+      draggableDiv.addEventListener('mousedown', (e) => {
+          isDragging = true;
+          offsetX = e.clientX - draggableDiv.offsetLeft;
+          offsetY = e.clientY - draggableDiv.offsetTop;
+          draggableDiv.style.cursor = 'grabbing'; // Change cursor to indicate dragging
+      });
+
+      document.addEventListener('mousemove', (e) => {
+          if (!isDragging) return;
+          draggableDiv.style.left = (e.clientX - offsetX) + 'px';
+          draggableDiv.style.top = (e.clientY - offsetY) + 'px';
+      });
+
+      document.addEventListener('mouseup', () => {
+          isDragging = false;
+          draggableDiv.style.cursor = 'move';
+      });
+
+      //set up the canvas
       var gameCanvas = {
         canvas : document.getElementById("canvas"),
         start : function() {
@@ -159,8 +185,6 @@
         });
 
       }
-
-     
 
       function updateGameCanvas() {
         var ctx = gameCanvas.context;
