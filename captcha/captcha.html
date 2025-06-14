@@ -130,6 +130,26 @@
           draggableDiv.style.cursor = 'move';
       });
 
+      // Touch events
+      draggableDiv.addEventListener('touchstart', (e) => {
+          isDragging = true;
+          const touch = e.touches[0];
+          offsetX = touch.clientX - draggableDiv.offsetLeft;
+          offsetY = touch.clientY - draggableDiv.offsetTop;
+      });
+
+      document.addEventListener('touchmove', (e) => {
+          if (!isDragging) return;
+          const touch = e.touches[0];
+          draggableDiv.style.left = (touch.clientX - offsetX) + 'px';
+          draggableDiv.style.top = (touch.clientY - offsetY) + 'px';
+          e.preventDefault(); // prevent scrolling while dragging
+      }, { passive: false });
+
+      document.addEventListener('touchend', () => {
+          isDragging = false;
+      });
+
       //set up the canvas
       var gameCanvas = {
         canvas : document.getElementById("canvas"),
